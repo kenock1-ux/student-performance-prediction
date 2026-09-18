@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EduPredict AI — Student Academic Performance Analysis</title>
+  <meta name="description" content="ML-powered predictive analysis of student academic performance using Classification (Grade A-F) and Regression (GPA 0.0–4.0) models built with TensorFlow.js." />
+
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <!-- Libraries (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.18.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+
+  <!-- App Styles -->
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- ── Loading Overlay ─────────────────────────────────────── -->
+<div class="loading-overlay active" id="loading-overlay">
+  <div class="loading-logo">🎓</div>
+  <h2 style="font-size:1.2rem;font-weight:700;letter-spacing:-0.02em;">EduPredict AI</h2>
+  <p class="loading-text">Initializing ML environment…</p>
+  <div class="loading-bar-wrap">
+    <div class="loading-bar"></div>
+  </div>
+</div>
+
+<div class="app-wrapper">
+
+  <!-- ── Navbar ────────────────────────────────────────────── -->
+  <header class="navbar">
+    <a href="#" class="navbar-brand">
+      <div class="brand-icon">🎓</div>
+      <div class="brand-text">
+        <span class="brand-title">EduPredict AI</span>
+        <span class="brand-sub">Student Performance ML</span>
+      </div>
+    </a>
+
+    <div style="display:flex;align-items:center;gap:1rem;">
+      <div class="navbar-status">
+        <div class="status-dot"></div>
+        <span>TensorFlow.js Ready</span>
+      </div>
+      <div style="font-size:0.72rem;color:var(--text-muted);padding:0.3rem 0.75rem;border:1px solid var(--border);border-radius:var(--radius-full);">
+        500 Students · 10 Features · 2 Models
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Tab Navigation ───────────────────────────────────── -->
+  <nav class="tab-nav" role="tablist" aria-label="Application sections">
+    <button class="tab-btn active" data-tab="dashboard" role="tab" id="tab-btn-dashboard">
+      <span class="tab-icon">📊</span> Dashboard
+    </button>
+    <button class="tab-btn" data-tab="dataset" role="tab" id="tab-btn-dataset">
+      <span class="tab-icon">🗃️</span> Dataset Explorer
+    </button>
+    <button class="tab-btn" data-tab="training" role="tab" id="tab-btn-training">
+      <span class="tab-icon">🚀</span> Model Training
+    </button>
+    <button class="tab-btn" data-tab="predict" role="tab" id="tab-btn-predict">
+      <span class="tab-icon">🔮</span> Predict Student
+    </button>
+    <button class="tab-btn" data-tab="metrics" role="tab" id="tab-btn-metrics">
+      <span class="tab-icon">📈</span> Performance Metrics
+    </button>
+  </nav>
+
+  <!-- ── Main Content ──────────────────────────────────────── -->
+  <main class="main-content">
+
+    <!-- ╔══════════════════════════════════════════════════════╗
+         ║                   DASHBOARD TAB                     ║
+         ╚══════════════════════════════════════════════════════╝ -->
+    <section class="tab-panel active" id="tab-dashboard" role="tabpanel">
+      <div class="section-header">
+        <h1 class="section-title">Academic Performance Overview</h1>
+        <p class="section-subtitle">Real-time analytics across 500 synthetic student records · 10 predictive features</p>
+      </div>
+
+      <!-- Key Metrics -->
+      <div class="metrics-grid mb-xl">
+        <div class="metric-card">
+          <div class="metric-icon purple">👥</div>
+          <div class="metric-value" id="metric-total">—</div>
+          <div class="metric-label">Total Students</div>
+          <div class="metric-change up">↑ Full dataset loaded</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-icon cyan">🎓</div>
+          <div class="metric-value" id="metric-avggpa">—</div>
+          <div class="metric-label">Average GPA</div>
+          <div class="metric-change up">↑ Out of 4.0 scale</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-icon green">✅</div>
+          <div class="metric-value" id="metric-passrate">—</div>
+          <div class="metric-label">Pass Rate</div>
+          <div class="metric-change up">↑ GPA ≥ 2.0 threshold</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-icon amber">🧠</div>
+          <div class="metric-value" id="metric-features">—</div>
+          <div class="metric-label">Input Features</div>
+          <div class="metric-change up">↑ Used for prediction</div>
+        </div>
+      </div>
+
+      <!-- Charts Row 1 -->
+      <div class="grid-2 mb-lg">
+        <div class="card">
+          <h2 style="font-size:0.9rem;font-weight:700;color:var(--text-primary);margin-bottom:var(--space-md);">
+            📊 GPA Distribution
+          </h2>
+          <div class="chart-container" style="height:240px;">
+            <canvas id="chart-gpa-dist" aria-label="GPA Distribution Histogram"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <h2 style="font-size:0.9rem;font-weight:700;color:var(--text-primary);margin-bottom:var(--space-md);">
+            🎓 Grade Distribution
+          </h2>
+          <div class="chart-container" style="height:240px;">
+            <canvas id="chart-grade-dist" aria-label="Grade Distribution Doughnut Chart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts Row 2 -->
+      <div class="grid-2-1 mb-lg">
+        <div class="card">
+          <h2 style="font-size:0.9rem;font-weight:700;color:var(--text-primary);margin-bottom:var(--space-md);">
+            🔗 Feature–GPA Correlation
+            <span data-tooltip="Pearson correlation coefficient between each feature and GPA"
+                  style="margin-left:6px;font-size:0.75rem;color:var(--text-muted);cursor:help;">ℹ️</span>
+          </h2>
+          <div class="chart-container" style="height:260px;">
+            <canvas id="chart-feature-corr" aria-label="Feature correlation with GPA"></canvas>
+          </div>
+        </div>
+        <div class="card" style="display:flex;flex-direction:column;">
+          <h2 style="font-size:0.9rem;font-weight:700;color:var(--text-primary);margin-bottom:var(--space-md);">
+            ✅ Pass / Fail Split
+          </h2>
+          <div class="chart-container" style="height:180px;margin-bottom:var(--space-md);">
+            <canvas id="chart-pass-fail" aria-label="Pass Fail distribution"></canvas>
+          </div>
+          <h3 style="font-size:0.8rem;font-weight:700;color:var(--text-secondary);margin-bottom:var(--space-sm);text-transform:uppercase;letter-spacing:0.04em;">
+            Grade Breakdown
+          </h3>
+          <div id="grade-breakdown"></div>
+        </div>
+      </div>
+
+      <!-- Model Info Cards -->
+      <div class="grid-2">
+        <div class="card" style="border-color:rgba(99,102,241,0.3);">
+          <div style="display:flex;align-items:center;gap:var(--space-sm);margin-bottom:var(--space-md);">
+            <span style="font-size:1.5rem;">🏷️</span>
+            <div>
+              <h3 style="font-size:0.9rem;font-weight:700;color:#818cf8;">Classification Model</h3>
+              <p style="font-size:0.72rem;color:var(--text-muted);">Multi-class Neural Network</p>
+            </div>
+          </div>
+          <p style="font-size:0.82rem;color:var(--text-secondary);line-height:1.6;margin-bottom:var(--space-md);">
+            Predicts the <strong style="color:var(--text-primary);">letter grade (A / B / C / D / F)</strong> a student is likely to receive, along with probability scores for each grade class.
+          </p>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;">
+            <span class="badge" style="background:rgba(99,102,241,0.15);color:#818cf8;">Dense 128 → 64 → 32 → 5</span>
+            <span class="badge" style="background:rgba(99,102,241,0.15);color:#818cf8;">Batch Norm + Dropout</span>
+            <span class="badge" style="background:rgba(99,102,241,0.15);color:#818cf8;">Softmax Output</span>
+            <span class="badge" style="background:rgba(99,102,241,0.15);color:#818cf8;">Adam Optimizer</span>
+          </div>
+        </div>
+        <div class="card" style="border-color:rgba(6,182,212,0.3);">
+          <div style="display:flex;align-items:center;gap:var(--space-sm);margin-bottom:var(--space-md);">
+            <span style="font-size:1.5rem;">📏</span>
+            <div>
+              <h3 style="font-size:0.9rem;font-weight:700;color:#06b6d4;">Regression Model</h3>
+              <p style="font-size:0.72rem;color:var(--text-muted);">Continuous GPA Predictor</p>
+            </div>
+          </div>
+          <p style="font-size:0.82rem;color:var(--text-secondary);line-height:1.6;margin-bottom:var(--space-md);">
+            Predicts the <strong style="color:var(--text-primary);">exact GPA value (0.0 – 4.0)</strong> using a continuous output layer, enabling fine-grained academic performance estimation.
+          </p>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;">
+            <span class="badge" style="background:rgba(6,182,212,0.15);color:#06b6d4;">Dense 128 → 64 → 32 → 1</span>
+            <span class="badge" style="background:rgba(6,182,212,0.15);color:#06b6d4;">Batch Norm + Dropout</span>
+            <span class="badge" style="background:rgba(6,182,212,0.15);color:#06b6d4;">Sigmoid Output</span>
+            <span class="badge" style="background:rgba(6,182,212,0.15);color:#06b6d4;">MSE Loss</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ╔══════════════════════════════════════════════════════╗
+         ║                 DATASET EXPLORER TAB                ║
+         ╚══════════════════════════════════════════════════════╝ -->
+    <section class="tab-panel" id="tab-dataset" role="tabpanel">
+      <div class="section-header">
+        <h1 class="section-title">Dataset Explorer</h1>
+        <p class="section-subtitle">Browse, search, and filter all 500 student records used for training</p>
+      </div>
+
+      <!-- Filter bar -->
+      <div class="filter-bar">
+        <div class="search-input-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="form-control" id="table-search"
+                 placeholder="Search by ID, grade, pass/fail, GPA…" aria-label="Search students" />
+        </div>
+        <select class="form-control" id="grade-filter" style="max-width:180px;" aria-label="Filter by grade">
+          <option value="">All Grades</option>
+          <option value="A">Grade A</option>
+          <option value="B">Grade B</option>
+          <option value="C">Grade C</option>
+          <option value="D">Grade D</option>
+          <option value="F">Grade F</option>
+        </select>
+      </div>
+
+      <!-- Table -->
+      <div class="card" style="padding:0;overflow:hidden;">
+        <div class="table-wrapper">
+          <table aria-label="Student records table">
+            <thead>
+              <tr>
+                <th data-sort="id">ID ↕</th>
+                <th data-sort="studyHours">Study Hrs ↕</th>
+                <th data-sort="attendance">Attendance ↕</th>
+                <th data-sort="prevGPA">Prev. GPA ↕</th>
+                <th data-sort="assignmentScore">Assignment ↕</th>
+                <th data-sort="midtermScore">Midterm ↕</th>
+                <th data-sort="tutoringSessions">Tutoring ↕</th>
+                <th data-sort="sleepHours">Sleep ↕</th>
+                <th data-sort="extracurricular">Extra ↕</th>
+                <th data-sort="partTimeJob">Job ↕</th>
+                <th data-sort="incomeLevel">Income ↕</th>
+                <th data-sort="finalGPA">Final GPA ↕</th>
+                <th data-sort="grade">Grade ↕</th>
+                <th data-sort="passFail">Status ↕</th>
+              </tr>
+            </thead>
+            <tbody id="students-tbody">
+              <tr><td colspan="14" style="text-align:center;padding:2rem;color:var(--text-muted);">Loading data…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination">
+        <span class="page-info" id="page-info">—</span>
+        <button class="page-btn" id="btn-prev-page" disabled aria-label="Previous page">← Prev</button>
+        <div id="page-numbers" style="display:flex;gap:4px;"></div>
+        <button class="page-btn" id="btn-next-page" aria-label="Next page">Next →</button>
+      </div>
+    </section>
+
+    <!-- ╔══════════════════════════════════════════════════════╗
+         ║                  MODEL TRAINING TAB                 ║
+         ╚══════════════════════════════════════════════════════╝ -->
+    <section class="tab-panel" id="tab-training" role="tabpanel">
+      <div class="section-header">
+        <h1 class="section-title">Model Training</h1>
+        <p class="section-subtitle">Configure hyperparameters, train, and watch the model learn in real-time</p>
+      </div>
+
+      <!-- Model Selector -->
+      <div class="model-tabs mb-lg">
+        <button class="model-tab active" data-mode="classification" id="mode-class-btn">
+          🏷️ Classification Model
+          <div style="font-size:0.72rem;color:var(--text-muted);font-weight:400;margin-top:2px;">
+            Predicts Grade (A / B / C / D / F)
+          </div>
+        </button>
+        <button class="model-tab" data-mode="regression" id="mode-reg-btn">
+          📏 Regression Model
+          <div style="font-size:0.72rem;color:var(--text-muted);font-weight:400;margin-top:2px;">
+            Predicts exact GPA (0.0 – 4.0)
+          </div>
+        </button>
+      </div>
+
+      <!-- Config Panel -->
+      <div class="grid-1-2 mb-lg">
+        <div class="card">
+          <h2 style="font-size:0.9rem;font-weight:700;color:var(--text-primary);margin-bottom:var(--space-lg);">
+            ⚙️ Hyperparameters
+          </h2>
+
+          <div class="form-group">
+            <label class="form-label" for="epochs-input">Training Epochs</label>
+            <div style="display:flex;align-items:center;gap:var(--space-md);">
+              <input type="range" id="epochs-input" min="10" max="150" value="50" step="5"
+                     aria-label="Number of training epochs" />
+              <span class="range-display" id="epochs-input-val">50</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="lr-input">Learning Rate</label>
+            <select class="form-control" id="lr-input" aria-label="Learning rate">
+              <option value="0.0001">0.0001 (Very slow)</option>
+              <option value="0.001" selected>0.001 (Recommended)</option>
+              <option value="0.005">0.005 (Fast)</option>
+              <option value="0.01">0.01 (Aggressive)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="batch-input">Batch Size</label>
+            <select class="form-control" id="batch-input" aria-label="Batch size">
+              <option value="16">16 (Small)</option>
+              <option value="32" selected>32 (Default)</option>
+              <option value="64">64 (Large)</option>
+              <option value="128">128 (XL)</option>
+            </select>
+          </div>
+
+          <div style="background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.2);border-radius:var(--radius-md);padding:var(--space-md);margin-bottom:var(--space-lg);">
+            <div id="train-class-info">
+              <p style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:4px;">
+                <strong style="color:#818cf8;">Classification:</strong> 80/20 train/test split,
+                Sparse Categorical Cross-Entropy loss, Accuracy metric
+              </p>
+            </div>
+            <div id="train-reg-info" class="hidden">
+              <p style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:4px;">
+                <strong style="color:#06b6d4;">Regression:</strong> 80/20 train/test split,
+                Mean Squared Error loss, MAE metric
+              </p>
+            </div>
+          </div>
+
+          <button class="btn btn-primary btn-lg w-full" id="btn-train">
+            🚀 Train Model
+          </button>
+        </div>
+
+        <!-- Training Status + Live Stats -->
+        <div>
+          <!-- Status bar (hidden until training) -->
+          <div class="training-status mb-md" id="training-status" style="display:none;">
+            <div class="training-spinner"></div>
+            <div>
+              <div style="font-weight:600;font-size:0.82rem;" id="epoch-status">Epoch 0/50</div>
+              <div style="font-size:0.75rem;color:var(--text-secondary);" id="loss-status">Loss: —</div>
+              <div style="font-size:0.75rem;color:var(--text-secondary);" id="acc-status"></div>
+            </div>
+          </div>
+
+          <!-- Results Container (populated after training) -->
+          <div id="training-results" class="hidden"></div>
+
+          <!-- Placeholder before training -->
+          <div id="training-placeholder" class="card" style="min-height:300px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:var(--space-md);">
+            <div style="font-size:3rem;">🧠</div>
+            <h3 style="font-weight:700;font-size:1rem;">Ready to Train</h3>
+            <p style="color:var(--text-secondary);font-size:0.82rem;max-width:260px;line-height:1.6;">
+              Select a model type, configure hyperparameters, then click <strong>Train Model</strong> to begin.
+            </p>
+            <p style="font-size:0.75rem;color:var(--text-muted);">
+              Training runs entirely in your browser using TensorFlow.js
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ╔══════════════════════════════════════════════════════╗
+         ║                  PREDICT STUDENT TAB                ║
+         ╚══════════════════════════════════════════════════════╝ -->
+    <section class="tab-panel" id="tab-predict" role="tabpanel">
+      <div class="section-header">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-md);">
+          <div>
+            <h1 class="section-title">Predict Student Performance</h1>
+            <p class="section-subtitle">Enter a student's profile to get AI-powered grade & GPA predictions</p>
+          </div>
+          <div>
+            <span id="predict-model-status" style="font-size:0.78rem;font-weight:600;color:#ef4444;">
+              ❌ No Models Trained
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-1-2">
+        <!-- Input Form -->
+        <div class="card">
+          <h2 style="font-size:0.9rem;font-weight:700;color:var(--text-primary);margin-bottom:var(--space-lg);">
+            📋 Student Profile
+          </h2>
+          <form id="prediction-form" novalidate>
+            <div class="form-group">
+              <label class="form-label" for="p-studyhours">Study Hours / Week</label>
+              <div style="display:flex;align-items:center;gap:var(--space-md);">
+                <input type="range" id="p-studyhours" min="0" max="40" value="20" step="1" aria-label="Study hours per week" />
+                <span class="range-display" id="p-studyhours-val">20</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="p-attendance">Attendance (%)</label>
+              <div style="display:flex;align-items:center;gap:var(--space-md);">
+                <input type="range" id="p-attendance" min="40" max="100" value="85" step="1" aria-label="Attendance percentage" />
+                <span class="range-display" id="p-attendance-val">85</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="p-prevgpa">Previous GPA (0.0 – 4.0)</label>
+              <div style="display:flex;align-items:center;gap:var(--space-md);">
+                <input type="range" id="p-prevgpa" min="0" max="4" value="2.5" step="0.1" aria-label="Previous GPA" />
+                <span class="range-display" id="p-prevgpa-val">2.5</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="p-assignment">Assignment Score (%)</label>
+              <div style="display:flex;align-items:center;gap:var(--space-md);">
+                <input type="range" id="p-assignment" min="0" max="100" value="75" step="1" aria-label="Assignment score" />
+                <span class="range-display" id="p-assignment-val">75</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="p-midterm">Midterm Score (%)</label>
+              <div style="display:flex;align-items:center;gap:var(--space-md);">
+                <input type="range" id="p-midterm" min="0" max="100" value="70" step="1" aria-label="Midterm score" />
+                <span class="range-display" id="p-midterm-val">70</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="p-tutoring">Tutoring Sessions</label>
+              <div style="display:flex;align-items:center;gap:var(--space-md);">
+                <input type="range" id="p-tutoring" min="0" max="20" value="5" step="1" aria-label="Tutoring sessions" />
+                <span class="range-display" id="p-tutoring-val">5</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="p-sleep">Sleep Hours / Night</label>
+              <div style="display:flex;align-items:center;gap:var(--space-md);">
+                <input type="range" id="p-sleep" min="3" max="10" value="7" step="0.5" aria-label="Sleep hours per night" />
+                <span class="range-display" id="p-sleep-val">7</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="p-extra">Extracurricular Activities</label>
+              <div style="display:flex;align-items:center;gap:var(--space-md);">
+                <input type="range" id="p-extra" min="0" max="5" value="2" step="1" aria-label="Extracurricular activities count" />
+                <span class="range-display" id="p-extra-val">2</span>
+              </div>
+            </div>
+
+            <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label" for="p-parttime">Part-Time Job</label>
+                <select class="form-control" id="p-parttime" aria-label="Has part-time job">
+                  <option value="0">No</option>
+                  <option value="1">Yes</option>
+                </select>
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label" for="p-income">Family Income Level</label>
+                <select class="form-control" id="p-income" aria-label="Family income level">
+                  <option value="0">Low Income</option>
+                  <option value="1" selected>Middle Income</option>
+                  <option value="2">High Income</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="margin-top:var(--space-lg);">
+              <button type="submit" class="btn btn-primary btn-lg w-full" id="btn-predict">
+                🔮 Predict Performance
+              </button>
+              <p style="font-size:0.72rem;color:var(--text-muted);text-align:center;margin-top:var(--space-sm);">
+                Train at least one model first to enable predictions
+              </p>
+            </div>
+          </form>
+        </div>
+
+        <!-- Result Panel -->
+        <div>
+          <!-- Default state -->
+          <div class="card" style="text-align:center;min-height:300px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--space-md);margin-bottom:var(--space-lg);"
+               id="predict-placeholder">
+            <div style="font-size:3.5rem;">🔮</div>
+            <h3 style="font-weight:700;font-size:1rem;">Awaiting Prediction</h3>
+            <p style="color:var(--text-secondary);font-size:0.82rem;max-width:260px;line-height:1.6;">
+              Fill in the student profile on the left and click <strong>Predict Performance</strong>.
+            </p>
+          </div>
+
+          <!-- Result card (populated after prediction) -->
+          <div class="prediction-result" id="prediction-result"></div>
+
+          <!-- Quick presets -->
+          <div class="card mt-lg">
+            <h3 style="font-size:0.8rem;font-weight:700;color:var(--text-secondary);margin-bottom:var(--space-sm);text-transform:uppercase;letter-spacing:0.04em;">
+              Quick Presets
+            </h3>
+            <div style="display:flex;gap:var(--space-sm);flex-wrap:wrap;">
+              <button class="btn btn-secondary btn-sm" onclick="applyPreset('excellent')" id="preset-excellent">
+                🌟 Excellent Student
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="applyPreset('average')" id="preset-average">
+                📚 Average Student
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="applyPreset('struggling')" id="preset-struggling">
+                ⚠️ Struggling Student
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ╔══════════════════════════════════════════════════════╗
+         ║               PERFORMANCE METRICS TAB               ║
+         ╚══════════════════════════════════════════════════════╝ -->
+    <section class="tab-panel" id="tab-metrics" role="tabpanel">
+      <div class="section-header">
+        <h1 class="section-title">Performance Metrics</h1>
+        <p class="section-subtitle">Detailed model evaluation — confusion matrix, per-class accuracy, regression stats</p>
+      </div>
+
+      <!-- Before training message -->
+      <div class="card text-center" id="metrics-untrained" style="padding:var(--space-2xl);">
+        <div style="font-size:3rem;margin-bottom:var(--space-md);">📊</div>
+        <h3 style="font-weight:700;font-size:1rem;margin-bottom:var(--space-sm);">No Trained Models Yet</h3>
+        <p style="color:var(--text-secondary);font-size:0.85rem;max-width:360px;margin:0 auto;">
+          Head to the <strong>Model Training</strong> tab, train one or both models, then return here to see detailed performance metrics.
+        </p>
+      </div>
+
+      <!-- Classification Section -->
+      <div id="metrics-class-section" class="hidden">
+        <h2 style="font-size:1rem;font-weight:800;color:#818cf8;margin-bottom:var(--space-lg);display:flex;align-items:center;gap:8px;">
+          🏷️ Classification Model Performance
+        </h2>
+
+        <div class="grid-2 mb-lg">
+          <div class="card">
+            <h3 style="font-size:0.85rem;font-weight:700;color:var(--text-primary);margin-bottom:var(--space-md);">Key Metrics</h3>
+            <div class="metric-row"><span class="metric-row-label">Validation Accuracy</span><span class="metric-row-value" style="color:#10b981;" id="mtr-accuracy">—</span></div>
+            <div class="metric-row"><span class="metric-row-label">Train Accuracy</span><span class="metric-row-value" id="mtr-train-acc">—</span></div>
+            <div class="metric-row"><span class="metric-row-label">Validation Loss</span><span class="metric-row-value" id="mtr-val-loss">—</span></div>
+            <div class="metric-row"><span class="metric-row-label">Epochs Trained</span><span class="metric-row-value" id="mtr-epochs">—</span></div>
+          </div>
+          <div class="card">
+            <h3 style="font-size:0.85rem;font-weight:700;color:var(--text-primary);margin-bottom:var(--space-md);">Per-class Accuracy</h3>
+            <div class="chart-container" style="height:180px;">
+              <canvas id="metrics-class-acc" aria-label="Per-class accuracy bar chart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="card mb-lg">
+          <h3 style="font-size:0.85rem;font-weight:700;color:var(--text-primary);margin-bottom:var(--space-md);">
+            Confusion Matrix
+            <span data-tooltip="Rows = True labels, Columns = Predicted labels. Diagonal = correct predictions."
+                  style="margin-left:6px;font-size:0.72rem;color:var(--text-muted);cursor:help;">ℹ️</span>
+          </h3>
+          <div id="metrics-cm"></div>
+        </div>
+      </div>
+
+      <!-- Regression Section -->
+      <div id="metrics-reg-section" class="hidden">
+        <h2 style="font-size:1rem;font-weight:800;color:#06b6d4;margin-bottom:var(--space-lg);margin-top:var(--space-xl);display:flex;align-items:center;gap:8px;">
+          📏 Regression Model Performance
+        </h2>
+
+        <div class="grid-2 mb-lg">
+          <div class="card">
+            <h3 style="font-size:0.85rem;font-weight:700;color:var(--text-primary);margin-bottom:var(--space-md);">Regression Metrics</h3>
+            <div class="metric-row">
+              <span class="metric-row-label" data-tooltip="Average absolute difference between predicted and actual GPA">Mean Absolute Error (MAE)</span>
+              <span class="metric-row-value" style="color:#10b981;" id="mtr-mae">—</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-row-label" data-tooltip="Root Mean Squared Error — penalizes large errors more than MAE">RMSE</span>
+              <span class="metric-row-value" id="mtr-rmse">—</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-row-label" data-tooltip="Coefficient of Determination: 1.0 = perfect, 0 = baseline mean">R² Score</span>
+              <span class="metric-row-value" id="mtr-r2">—</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-row-label">Validation MSE</span>
+              <span class="metric-row-value" id="mtr-mse">—</span>
+            </div>
+          </div>
+          <div class="card" style="display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:var(--space-md);">
+            <div style="font-size:2rem;">📐</div>
+            <p style="font-size:0.82rem;color:var(--text-secondary);max-width:240px;line-height:1.6;">
+              An <strong>MAE of 0.25</strong> means predictions are on average ±0.25 GPA points from the true value.
+            </p>
+            <p style="font-size:0.75rem;color:var(--text-muted);">
+              R² closer to 1.0 indicates a better fit.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Feature Correlation (always visible) -->
+      <div class="card">
+        <h2 style="font-size:0.9rem;font-weight:700;color:var(--text-primary);margin-bottom:var(--space-md);">
+          🔗 Feature–GPA Correlations (Full Dataset)
+        </h2>
+        <div class="chart-container" style="height:300px;">
+          <canvas id="chart-metrics-corr" aria-label="Feature correlation chart for metrics tab"></canvas>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div><!-- .app-wrapper -->
+
+<!-- Scripts -->
+<script src="js/data.js"></script>
+<script src="js/model.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/app.js"></script>
+
+<!-- Preset helper & init -->
+<script>
+  // Remove loading overlay once TF.js is ready
+  tf.ready().then(() => {
+    setTimeout(() => {
+      document.getElementById('loading-overlay').classList.remove('active');
+    }, 600);
+  });
+
+  // Quick preset values for prediction form
+  const PRESETS = {
+    excellent: {
+      studyHours: 35, attendance: 97, prevGPA: 3.8,
+      assignment: 95, midterm: 93, tutoring: 12,
+      sleep: 7.5, extra: 2, parttime: '0', income: '2',
+    },
+    average: {
+      studyHours: 18, attendance: 78, prevGPA: 2.5,
+      assignment: 72, midterm: 68, tutoring: 4,
+      sleep: 7, extra: 2, parttime: '0', income: '1',
+    },
+    struggling: {
+      studyHours: 5, attendance: 52, prevGPA: 1.2,
+      assignment: 42, midterm: 35, tutoring: 1,
+      sleep: 5, extra: 0, parttime: '1', income: '0',
+    },
+  };
+
+  function applyPreset(type) {
+    const p = PRESETS[type];
+    if (!p) return;
+
+    const set = (id, val) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.value = val;
+      // Update range display
+      const display = document.getElementById(id + '-val');
+      if (display) display.textContent = val;
+    };
+
+    set('p-studyhours', p.studyHours);
+    set('p-attendance', p.attendance);
+    set('p-prevgpa', p.prevGPA);
+    set('p-assignment', p.assignment);
+    set('p-midterm', p.midterm);
+    set('p-tutoring', p.tutoring);
+    set('p-sleep', p.sleep);
+    set('p-extra', p.extra);
+    document.getElementById('p-parttime').value = p.parttime;
+    document.getElementById('p-income').value   = p.income;
+  }
+</script>
+</body>
+</html>
